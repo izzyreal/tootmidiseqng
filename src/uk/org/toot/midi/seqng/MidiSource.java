@@ -16,7 +16,7 @@ import javax.sound.midi.MidiEvent;
  * implementation. Clients of this class need not know about any such
  * representation or any specific implementation of this class.
  * 
- * There are 2 edge cases in iteration.
+ * There are a few edge cases in iteration.
  * 
  * Assume we have notes X then Y and X has already been consumed such that
  * peek() and next() would both return Y. At some point peek() will return Y and
@@ -37,6 +37,16 @@ import javax.sound.midi.MidiEvent;
  * in which case next() has consumed it too early and Z would not subsequently
  * be played at the appropriate time. In this case the race condition with note deletion
  * near the current iterator position is not handled properly and notes may be lost.
+ * It should be noted that this race condition typically only occurs if a note is deleted
+ * at exactly the millisecond it becomes playable, it is unlikely but possible.
+ * 
+ * Assume we have notes X then Y and X has already been consumed such that
+ * peek() and next() would both return Y. Assume X is deleted. This may require
+ * the iterator to reposition itself such that next() still returns Y.
+ * 
+ * In general an iterator should not maintain position by referencing the next note.
+ * The next note may be varying as new notes are added, so it is arguably best practice to
+ * maintain position by referencing the previous note.
  * 
  * @author st
  * 
