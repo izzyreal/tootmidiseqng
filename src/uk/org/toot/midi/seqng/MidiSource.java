@@ -23,17 +23,25 @@ public abstract class MidiSource extends Observable
 {
 	public abstract List<TrackSource> getTrackSources();
 	
+	/**
+	 * An iterator of MidiEvents.
+	 * We don't implement hasNext() because in general there is no iterator
+	 * termination, another MidiEvent may be created at ant time. Also, if there
+	 * is a next MidiEvent we want to know what it is in order to examine its tick.
+	 * @author st
+	 *
+	 */
 	public interface TrackSource
 	{
 		/**
 		 * Return the next MidiEvent without changing iterator position.
-		 * @return the next MidiEvent
+		 * @return the next MidiEvent or null
 		 */
 		public MidiEvent peek();
 		
 		/**
 		 * Return the next MidiEvent and increment iterator position.
-		 * @return the next MidiEvent
+		 * @return the next MidiEvent or null
 		 */
 		public MidiEvent next();
 	}
