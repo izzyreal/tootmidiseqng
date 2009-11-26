@@ -53,7 +53,7 @@ import javax.sound.midi.MidiEvent;
  */
 public abstract class MidiSource extends Observable
 {
-	public abstract List<TrackSource> getTrackSources();
+	public abstract List<RenderSource> getRenderSources();
 	
 	/**
 	 * An iterator of MidiEvents.
@@ -63,7 +63,7 @@ public abstract class MidiSource extends Observable
 	 * @author st
 	 *
 	 */
-	public interface TrackSource
+	public interface RenderSource
 	{
 		/**
 		 * Return the next MidiEvent without changing iterator position.
