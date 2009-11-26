@@ -14,26 +14,26 @@ import javax.sound.midi.Track;
  */
 public class SequenceMidiSource extends MidiSource
 {
-	private List<TrackSource> trackSources = new java.util.ArrayList<TrackSource>();
+	private List<RenderSource> trackSources = new java.util.ArrayList<RenderSource>();
 	
 	public SequenceMidiSource(Sequence sequence) {
 		Track[] tracks = sequence.getTracks();
 		for ( int i = 0; i < tracks.length; i++ ) {
-			trackSources.add(new SequenceTrackSource(tracks[i]));
+			trackSources.add(new SequenceRenderSource(tracks[i]));
 		}
 	}
 	
 	@Override
-	public List<TrackSource> getTrackSources() {
+	public List<RenderSource> getRenderSources() {
 		return trackSources;
 	}
 	
-	protected class SequenceTrackSource implements TrackSource
+	protected class SequenceRenderSource implements RenderSource
 	{
 		private Track track;
 		private int index = 0;
 		
-		public SequenceTrackSource(Track track) {
+		public SequenceRenderSource(Track track) {
 			this.track = track;
 		}
 		
