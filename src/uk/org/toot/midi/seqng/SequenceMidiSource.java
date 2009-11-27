@@ -1,5 +1,6 @@
 package uk.org.toot.midi.seqng;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.sound.midi.MidiEvent;
@@ -14,26 +15,34 @@ import javax.sound.midi.Track;
  */
 public class SequenceMidiSource extends MidiSource
 {
-	private List<RenderSource> trackSources = new java.util.ArrayList<RenderSource>();
+	private List<SequenceEventSource> eventSources = 
+		new java.util.ArrayList<SequenceEventSource>();
 	
 	public SequenceMidiSource(Sequence sequence) {
 		Track[] tracks = sequence.getTracks();
 		for ( int i = 0; i < tracks.length; i++ ) {
-			trackSources.add(new SequenceRenderSource(tracks[i]));
+			eventSources.add(new SequenceEventSource(tracks[i]));
 		}
 	}
 	
 	@Override
-	public List<RenderSource> getRenderSources() {
-		return trackSources;
+	public List<EventSource> getEventSources() {
+		return Collections.<EventSource>unmodifiableList(eventSources);
 	}
 	
-	protected class SequenceRenderSource implements RenderSource
+	@Override
+	public void returnToZero() {
+		for ( SequenceEventSource source : eventSources ) {
+			source.returnToZero();
+		}
+	}
+	
+	protected class SequenceEventSource implements EventSource
 	{
 		private Track track;
 		private int index = 0;
 		
-		public SequenceRenderSource(Track track) {
+		public SequenceEventSource(Track track) {
 			this.track = track;
 		}
 		
@@ -45,6 +54,10 @@ public class SequenceMidiSource extends MidiSource
 		public MidiEvent next() {
 			if ( index >= track.size() ) return null;
 			return track.get(index++);
-		}	
+		}
+		
+		public void returnToZero() {
+			index = 0;
+		}
 	}
 }
