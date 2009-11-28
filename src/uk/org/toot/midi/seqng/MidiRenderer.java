@@ -40,6 +40,7 @@ public abstract class MidiRenderer extends Observable
 				if ( srcIdx == 0 ) check(evt);
 				src.next();
 				evt = src.peek();
+				if ( evt == null ) break;
 			}
 			srcIdx += 1;
 		}
