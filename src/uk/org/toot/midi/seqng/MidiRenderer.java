@@ -24,13 +24,16 @@ public abstract class MidiRenderer
 	/**
 	 * Pump MidiMessages as they become due.
 	 * @param targetTick the tick to pump until.
+	 * @return true if every peek() returned null, false otherwise
 	 */
-	protected void pump(long targetTick) {
+	protected boolean pump(long targetTick) {
 		MidiEvent evt;
 		int srcIdx = 0;
+		boolean empty = true;
 		for ( MidiSource.EventSource src : eventSources() ) {
 			evt = src.peek();
 			if ( evt == null ) continue;
+			empty = false;
 			while ( evt.getTick() <= targetTick ) {
 				transport(evt.getMessage(), src, srcIdx);
 				if ( srcIdx == 0 ) check(evt);
@@ -38,7 +41,8 @@ public abstract class MidiRenderer
 				evt = src.peek();
 			}
 			srcIdx += 1;
-		}		
+		}
+		return empty;
 	}
 	
 	/**

@@ -37,8 +37,9 @@ public class SequenceMidiRenderer extends MidiRenderer
 		for ( int i = 0; i < eventSources.size(); i++ ) {
 			sequence.createTrack();
 		}
-		while ( (currentTick = findNextTick()) < Long.MAX_VALUE ) {
-			pump(currentTick);
+		boolean complete = false;
+		while ( !complete ) {
+			complete = pump(currentTick = findNextTick());
 		}
 		return sequence;
 	}

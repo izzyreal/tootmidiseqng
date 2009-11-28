@@ -16,12 +16,11 @@ import static uk.org.toot.midi.message.MetaMsg.*;
 public class MidiPlayer extends MidiRenderer
 {
 	private boolean running = false;
-	private float bpm;
 	private long refTick = 0L;
 	private long refMillis;
-	private int resolution;
 	private float ticksPerMilli;
 	private PlayEngine playEngine;
+	private boolean stopOnEmpty = true;
 
 	@Override
 	public void setMidiSource(MidiSource source) {
@@ -36,10 +35,9 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("MidiSource is null");
 		}
 		if ( running ) return;
-		refMillis = getCurrentTimeMillis();
-		resolution = source.getResolution();
 		setBpm(120);
 		running = true;
+		refMillis = getCurrentTimeMillis();
 		playEngine = new PlayEngine();
 	}
 	
@@ -90,9 +88,8 @@ public class MidiPlayer extends MidiRenderer
 		}
 	}
 	
-	protected void setBpm(float aBpm) {
-		bpm = aBpm;
-		ticksPerMilli = resolution * bpm / 60000;
+	protected void setBpm(float bpm) {
+		ticksPerMilli = source.getResolution() * bpm / 60000;
 	}
 
 	protected long getCurrentTimeMillis() {
@@ -103,9 +100,12 @@ public class MidiPlayer extends MidiRenderer
 		return (long)(refTick + ticksPerMilli * (getCurrentTimeMillis() - refMillis));
 	}
 	
-	// to be called when pumping
-	protected void pump() {
-		pump(getCurrentTimeTicks());
+	/**
+	 * to be called when pumping
+	 * @return true if peek() on all MidiSource.Events sources returne null, false otherwise.
+	 */ 
+	protected boolean pump() {
+		return pump(getCurrentTimeTicks());
 	}
 	
 	/**
@@ -113,7 +113,8 @@ public class MidiPlayer extends MidiRenderer
 	 * @author st
 	 *
 	 */
-	class PlayEngine implements Runnable {
+	private class PlayEngine implements Runnable 
+	{
 		private Thread thread;
 
 		PlayEngine() {
@@ -132,8 +133,9 @@ public class MidiPlayer extends MidiRenderer
 		
 		public void run() {
 			Thread thisThread = Thread.currentThread();
-			while (thread == thisThread) {
-				pump();
+			boolean complete = false;
+			while ( thread == thisThread && !complete ) {
+				complete = pump() && stopOnEmpty;
 
 				try {
 					Thread.sleep(1);
@@ -141,7 +143,7 @@ public class MidiPlayer extends MidiRenderer
 					// ignore
 				}
 			}
-			stopped();
+			stopped(); // turns off active notes, resets some controllers
 		}
 	}
 }
