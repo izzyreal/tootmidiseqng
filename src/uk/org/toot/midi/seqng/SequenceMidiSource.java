@@ -15,10 +15,13 @@ import javax.sound.midi.Track;
  */
 public class SequenceMidiSource extends MidiSource
 {
+	private Sequence sequence;
+	
 	private List<SequenceEventSource> eventSources = 
 		new java.util.ArrayList<SequenceEventSource>();
 	
 	public SequenceMidiSource(Sequence sequence) {
+		this.sequence = sequence;
 		Track[] tracks = sequence.getTracks();
 		for ( int i = 0; i < tracks.length; i++ ) {
 			eventSources.add(new SequenceEventSource(tracks[i]));
@@ -35,6 +38,10 @@ public class SequenceMidiSource extends MidiSource
 		for ( SequenceEventSource source : eventSources ) {
 			source.returnToZero();
 		}
+	}
+	
+	public int getResolution() {
+		return sequence.getResolution();
 	}
 	
 	protected class SequenceEventSource implements EventSource

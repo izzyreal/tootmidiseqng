@@ -58,6 +58,12 @@ public abstract class MidiSource extends Observable
 	public abstract void returnToZero();
 	
 	/**
+	 * 
+	 * @return the resolution in ticks per quarter note
+	 */
+	public abstract int getResolution();
+	
+	/**
 	 * An iterator of MidiEvents.
 	 * We don't implement hasNext() because in general there is no iterator
 	 * termination, another MidiEvent may be created at ant time. Also, if there
