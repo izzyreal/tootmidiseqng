@@ -5,7 +5,7 @@ import java.util.List;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 
-import uk.org.toot.midi.message.MetaMsg;
+import static uk.org.toot.midi.message.MetaMsg.*;
 
 /**
  * MidiPlayer plays MIDI from MidiSources in real-time.
@@ -31,7 +31,7 @@ public class MidiPlayer extends MidiRenderer
 		super.setMidiSource(source);
 	}
 	
-	synchronized public void play() {
+	public void play() {
 		if ( source == null ) {
 			throw new IllegalStateException("MidiSource is null");
 		}
@@ -43,7 +43,7 @@ public class MidiPlayer extends MidiRenderer
 		playEngine = new PlayEngine();
 	}
 	
-	synchronized public void stop() {
+	public void stop() {
 		if ( !running ) return;
 		playEngine.stop();
 	}
@@ -73,10 +73,9 @@ public class MidiPlayer extends MidiRenderer
 	@Override
 	protected void check(MidiEvent event) {
 		MidiMessage msg = event.getMessage();
-		if ( MetaMsg.isMeta(msg) ) {
-			if ( MetaMsg.getType(msg) == MetaMsg.TEMPO ) {
-				// set bpm, refTick, refMillis
-				setBpm(MetaMsg.getTempo(msg));
+		if ( isMeta(msg) ) {
+			if ( getType(msg) == TEMPO ) {
+				setBpm(getTempo(msg));
 				refTick = event.getTick();
 				refMillis = getCurrentTimeMillis();
 			}
@@ -115,7 +114,6 @@ public class MidiPlayer extends MidiRenderer
 			+ ((Thread.MAX_PRIORITY - Thread.NORM_PRIORITY) * 3) / 4;
 			thread = new Thread(this);
 			thread.setName("Toot MidiPlayer");
-			thread.setDaemon(false);
 			thread.setPriority(priority);
 			thread.start();
 		}
