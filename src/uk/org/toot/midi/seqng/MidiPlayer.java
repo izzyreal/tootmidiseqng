@@ -113,7 +113,7 @@ public class MidiPlayer extends MidiRenderer
 			int priority = Thread.NORM_PRIORITY
 			+ ((Thread.MAX_PRIORITY - Thread.NORM_PRIORITY) * 3) / 4;
 			thread = new Thread(this);
-			thread.setName("Toot MidiPlayer");
+			thread.setName("Toot MidiPlayer - "+source.getName());
 			thread.setPriority(priority);
 			thread.start();
 		}

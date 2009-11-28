@@ -33,15 +33,13 @@ public class SequenceMidiSource extends MidiSource
 		return Collections.<EventSource>unmodifiableList(eventSources);
 	}
 	
-	@Override
-	public void returnToZero() {
-		for ( SequenceEventSource source : eventSources ) {
-			source.returnToZero();
-		}
-	}
-	
 	public int getResolution() {
 		return sequence.getResolution();
+	}
+	
+	public String getName() {
+		// TODO scan the first track of the Sequence to determine its name
+		return "sequence";
 	}
 	
 	protected class SequenceEventSource implements EventSource

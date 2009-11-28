@@ -54,8 +54,11 @@ import javax.sound.midi.MidiEvent;
 public abstract class MidiSource extends Observable
 {
 	public abstract List<EventSource> getEventSources();
-	
-	public abstract void returnToZero();
+
+	/**
+	 * @return the name of this source 
+	 */
+	public abstract String getName();
 	
 	/**
 	 * 
