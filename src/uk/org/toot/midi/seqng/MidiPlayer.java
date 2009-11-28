@@ -15,20 +15,37 @@ import uk.org.toot.midi.message.MetaMsg;
  */
 public class MidiPlayer extends MidiRenderer
 {
+	private boolean running = false;
 	private float bpm;
 	private long refTick = 0L;
 	private long refMillis;
 	private int resolution;
 	private float ticksPerMilli;
+	private PlayEngine playEngine;
 
-	public void start() {
+	@Override
+	public void setMidiSource(MidiSource source) {
+		if ( running ) {
+			throw new IllegalStateException("Can't set MidiSource while playing");
+		}
+		super.setMidiSource(source);
+	}
+	
+	synchronized public void play() {
+		if ( source == null ) {
+			throw new IllegalStateException("MidiSource is null");
+		}
+		if ( running ) return;
 		refMillis = getCurrentTimeMillis();
 		resolution = source.getResolution();
 		setBpm(120);
+		running = true;
+		playEngine = new PlayEngine();
 	}
 	
-	public void stop() {
-		// stop pumping
+	synchronized public void stop() {
+		if ( !running ) return;
+		playEngine.stop();
 	}
 	
 	// to be called when pumping has stopped
@@ -38,6 +55,7 @@ public class MidiPlayer extends MidiRenderer
 				((MidiTarget.MessageTarget)src).notesOff(true);
 			}			
 		}
+		running = false;
 	}
 	
 	@Override
@@ -78,7 +96,46 @@ public class MidiPlayer extends MidiRenderer
 		return (long)(refTick + ticksPerMilli * (getCurrentTimeMillis() - refMillis));
 	}
 	
+	// to be called when pumping
 	protected void pump() {
 		pump(getCurrentTimeTicks());
+	}
+	
+	/**
+	 * PlayEngine encapsulates the real-time thread to avoid run() being public in MidiPlayer.
+	 * @author st
+	 *
+	 */
+	class PlayEngine implements Runnable {
+		private Thread thread;
+
+		PlayEngine() {
+			// nearly MAX_PRIORITY
+			int priority = Thread.NORM_PRIORITY
+			+ ((Thread.MAX_PRIORITY - Thread.NORM_PRIORITY) * 3) / 4;
+			thread = new Thread(this);
+			thread.setName("Toot MidiPlayer");
+			thread.setDaemon(false);
+			thread.setPriority(priority);
+			thread.start();
+		}
+		
+		public void stop() {
+			thread = null;			
+		}
+		
+		public void run() {
+			Thread thisThread = Thread.currentThread();
+			while (thread == thisThread) {
+				pump();
+
+				try {
+					Thread.sleep(1);
+				} catch (InterruptedException ie) {
+					// ignore
+				}
+			}
+			stopped();
+		}
 	}
 }

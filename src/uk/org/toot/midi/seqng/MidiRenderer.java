@@ -15,7 +15,9 @@ public abstract class MidiRenderer
 	protected MidiSource source;
 
 	public void setMidiSource(MidiSource source) {
-		// TODO fail if running
+		if ( source == null ) {
+			throw new IllegalArgumentException("MidiSource can't be null");
+		}
 		this.source = source;
 	}
 	
