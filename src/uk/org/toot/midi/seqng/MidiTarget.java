@@ -41,7 +41,7 @@ public abstract class MidiTarget extends MidiSource
 	 * @author st
 	 *
 	 */
-	public abstract class AbstractMessageTarget implements MessageTarget, EventSource
+	public abstract static class AbstractMessageTarget implements MessageTarget, EventSource
 	{
 		private NoteOnCache noteOnCache;
 		

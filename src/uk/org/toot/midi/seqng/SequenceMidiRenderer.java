@@ -10,7 +10,7 @@ import javax.sound.midi.Sequence;
 import uk.org.toot.midi.seqng.MidiSource.EventSource;
 
 /**
- * MidiPlayer write MIDI from MidiSources to a Standard MIDI File, type 1.
+ * This class renders MIDI from a MidiSource to a Sequence.
  * @author st
  *
  */
@@ -27,13 +27,35 @@ public class SequenceMidiRenderer extends MidiRenderer
 		eventSources = source.getEventSources();
 	}
 	
+	/**
+	 * Render the current MidiSource to a Sequence.
+	 * @return the rendered Sequence
+	 * @throws InvalidMidiDataException
+	 */
 	public Sequence render() throws InvalidMidiDataException {
 		sequence = new Sequence(Sequence.PPQ, source.getResolution());
 		for ( int i = 0; i < eventSources.size(); i++ ) {
 			sequence.createTrack();
 		}
-		// TODO call pump with increasing ticks UNTIL EOF !!!
+		while ( (currentTick = findNextTick()) < Long.MAX_VALUE ) {
+			pump(currentTick);
+		}
 		return sequence;
+	}
+	
+	protected long findNextTick() {
+		long earliestTick = Long.MAX_VALUE;
+		long tick;
+		MidiEvent evt;
+		for ( MidiSource.EventSource src : eventSources ) {
+			evt = src.peek();
+			if ( evt == null ) continue;
+			tick = evt.getTick();
+			if ( tick < earliestTick ) {
+				earliestTick = tick;
+			}
+		}
+		return earliestTick;
 	}
 	
 	@Override
