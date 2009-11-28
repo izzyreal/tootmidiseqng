@@ -48,6 +48,14 @@ public class MidiPlayer extends MidiRenderer
 		playEngine.stop();
 	}
 	
+	public void returnToZero() {
+		// to avoid synchronisation issues
+		if ( running ) {
+			throw new IllegalStateException("Can't returnToZero while playing");
+		}
+		refTick = 0L;
+	}
+	
 	// to be called when pumping has stopped
 	protected void stopped() {
 		for ( MidiSource.EventSource src : eventSources() ) {

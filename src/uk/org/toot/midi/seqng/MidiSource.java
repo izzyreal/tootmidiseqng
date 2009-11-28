@@ -61,6 +61,13 @@ public abstract class MidiSource extends Observable
 	public abstract String getName();
 	
 	/**
+	 * Should only be called by MidiPlayer, MidiPlayer will behave incorrectly if
+	 * anything else calls it.
+	 *
+	 */
+	public abstract void returnToZero();
+	
+	/**
 	 * 
 	 * @return the resolution in ticks per quarter note
 	 */

@@ -42,6 +42,15 @@ public class SequenceMidiSource extends MidiSource
 		return "sequence";
 	}
 	
+	/**
+	 * Should only be called by MidiPlayer.
+	 */
+	public void returnToZero() {
+		for ( MidiSource.EventSource src : eventSources ) {
+			((SequenceEventSource)src).returnToZero();
+		}
+	}
+	
 	protected class SequenceEventSource implements EventSource
 	{
 		private Track track;
