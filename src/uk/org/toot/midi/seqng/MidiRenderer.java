@@ -1,6 +1,7 @@
 package uk.org.toot.midi.seqng;
 
 import java.util.List;
+import java.util.Observable;
 
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
@@ -10,7 +11,7 @@ import javax.sound.midi.MidiMessage;
  * @author st
  *
  */
-public abstract class MidiRenderer
+public abstract class MidiRenderer extends Observable
 {
 	protected MidiSource source;
 

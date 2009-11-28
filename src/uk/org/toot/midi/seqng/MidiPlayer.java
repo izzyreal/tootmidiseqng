@@ -30,6 +30,9 @@ public class MidiPlayer extends MidiRenderer
 		super.setMidiSource(source);
 	}
 	
+	/**
+	 * Start playing
+	 */
 	public void play() {
 		if ( source == null ) {
 			throw new IllegalStateException("MidiSource is null");
@@ -39,19 +42,45 @@ public class MidiPlayer extends MidiRenderer
 		running = true;
 		refMillis = getCurrentTimeMillis();
 		playEngine = new PlayEngine();
+		notifyObservers();
 	}
 	
+	/**
+	 * Commence stopping.
+	 */
 	public void stop() {
 		if ( !running ) return;
 		playEngine.stop();
 	}
 	
+	/**
+	 * As if setMidiSource() had been called again.
+	 */
 	public void returnToZero() {
 		// to avoid synchronisation issues
 		if ( running ) {
 			throw new IllegalStateException("Can't returnToZero while playing");
 		}
+		source.returnToZero();
 		refTick = 0L;
+	}
+	
+	/**
+	 * Return whether we're currently playing.
+	 * Note that observers are notified on transitions.
+	 * @return true if playing (or stopping), false if stopped
+	 */
+	public boolean isRunning() {
+		return running;
+	}
+
+	/**
+	 * Allow the default stop on empty to be changed in the unlikely event playing
+	 * should proceed even when there is nothing to play at any point in the future.
+	 * @param soe
+	 */
+	public void setStopOnEmpty(boolean soe) {
+		stopOnEmpty = soe;
 	}
 	
 	// to be called when pumping has stopped
@@ -62,6 +91,7 @@ public class MidiPlayer extends MidiRenderer
 			}			
 		}
 		running = false;
+		notifyObservers();
 	}
 	
 	@Override
