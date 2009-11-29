@@ -174,6 +174,8 @@ public class MidiPlayer extends MidiRenderer
 					// ignore
 				}
 			}
+			// recalculate refTick, compensating for sleep(1)
+			refTick = (long)(getCurrentTimeTicks() - ticksPerMilli);
 			stopped(); // turns off active notes, resets some controllers
 		}
 	}
