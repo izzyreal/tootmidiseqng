@@ -48,7 +48,7 @@ public class SequenceMidiSource extends MidiSource
 	 * Should only be called by MidiPlayer.
 	 * Package visibility to prevent other packages calling it.
 	 */
-	void returnToZero() {
+	protected void returnToZero() {
 		for ( MidiSource.EventSource src : eventSources ) {
 			((SequenceEventSource)src).returnToZero();
 		}

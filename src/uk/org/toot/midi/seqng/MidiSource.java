@@ -73,9 +73,8 @@ public abstract class MidiSource extends Observable
 	/**
 	 * Should only be called by MidiPlayer.returnToZero(), MidiPlayer will behave 
 	 * incorrectly if anything else calls it.
-	 * Package visibility to prevent other packages calling it.
 	 */
-	abstract void returnToZero();
+	protected abstract void returnToZero();
 	
 	/**
 	 * Should only be called by MidiPlayer.pump().
@@ -85,9 +84,8 @@ public abstract class MidiSource extends Observable
 	 * they are not prepared to accept mutations to the List of EventSources.
 	 * Failure to mutate the underlying List only in this method will likely result
 	 * in ConcurrentModificationExceptions being thrown.
-	 * Package visibility to prevent other packages calling it.
 	 */
-	void sync() {};
+	protected void sync() {};
 	
 	/**
 	 * An iterator of MidiEvents.
