@@ -46,6 +46,7 @@ public class MidiPlayer extends MidiRenderer
 		if ( running ) return;
 		running = true;
 		playEngine = new PlayEngine();
+		setChanged();
 		notifyObservers();
 	}
 	
@@ -96,6 +97,7 @@ public class MidiPlayer extends MidiRenderer
 			}			
 		}
 		running = false;
+		setChanged();
 		notifyObservers();
 	}
 	
