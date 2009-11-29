@@ -10,6 +10,10 @@ import static uk.org.toot.midi.message.MetaMsg.*;
 /**
  * MidiPlayer plays MIDI from MidiSources in real-time.
  * It is the real-time part of a 'sequencer'.
+ * It cannot support controller chasing, repositioning while running, or looping.
+ * It cannot easily support mute/solo because the List of EventSources may be dynamic.
+ * These operations must be provided by individual MidiSource implementations
+ * as appropriate.
  * @author st
  *
  */

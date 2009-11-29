@@ -16,6 +16,7 @@ import uk.org.toot.midi.message.NoteMsg;
  * MidiTarget extends MidiSource to provide a 1:1 mapping between EventSources and
  * MessageTargets. This allows the source of MidiEvents to also control the destination
  * of the resulting MidiMessages.
+ * Only MidiPlayer makes use of MidiTarget.
  * @author st
  *
  */
@@ -39,7 +40,6 @@ public abstract class MidiTarget extends MidiSource
 	 * notesOff() is implemented to turn off notes from the NoteOnCache.
 	 * transportImpl() should be implemented by subclasses.
 	 * @author st
-	 *
 	 */
 	public abstract static class AbstractMessageTarget implements MessageTarget, EventSource
 	{
@@ -112,7 +112,6 @@ public abstract class MidiTarget extends MidiSource
 	 * A NoteOnCache is used for each MidiMessage destination in order that
 	 * active note ONs may be turned OFF on a stop condition or when muted.
 	 * @author st
-	 *
 	 */
 	public static class NoteOnCache
 	{

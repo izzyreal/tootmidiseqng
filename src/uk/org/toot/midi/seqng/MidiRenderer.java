@@ -49,7 +49,7 @@ public abstract class MidiRenderer extends Observable
 	
 	/**
 	 * Provide the List of EventSources.
-	 * This may be dynamic, different per call, or static, nevery changing, depending
+	 * This may be dynamic, different per call, or static, never changing, depending
 	 * on the particular subclass.
 	 * @return the List of EventSources
 	 */

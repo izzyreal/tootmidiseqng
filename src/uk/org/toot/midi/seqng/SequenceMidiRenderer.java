@@ -20,7 +20,7 @@ public class SequenceMidiRenderer extends MidiRenderer
 	
 	private Sequence sequence;
 	
-	private long currentTick = 0;
+	private long currentTick;
 	
 	public void setMidiSource(MidiSource source) {
 		super.setMidiSource(source);

@@ -33,10 +33,12 @@ public class SequenceMidiSource extends MidiSource
 		return Collections.<EventSource>unmodifiableList(eventSources);
 	}
 	
+	@Override
 	public int getResolution() {
 		return sequence.getResolution();
 	}
 	
+	@Override
 	public String getName() {
 		// TODO scan the first track of the Sequence to determine its name
 		return "sequence";
@@ -44,8 +46,9 @@ public class SequenceMidiSource extends MidiSource
 	
 	/**
 	 * Should only be called by MidiPlayer.
+	 * Package visibility to prevent other packages calling it.
 	 */
-	public void returnToZero() {
+	void returnToZero() {
 		for ( MidiSource.EventSource src : eventSources ) {
 			((SequenceEventSource)src).returnToZero();
 		}

@@ -53,6 +53,11 @@ import javax.sound.midi.MidiEvent;
  */
 public abstract class MidiSource extends Observable
 {
+	/**
+	 * Note that the first EventSource in the List should contain those events
+	 * which are restricted to the first track of a type 1 standard midi file. e.g. Tempo
+	 * @return the List of EventSources
+	 */
 	public abstract List<EventSource> getEventSources();
 
 	/**
@@ -61,25 +66,24 @@ public abstract class MidiSource extends Observable
 	public abstract String getName();
 	
 	/**
-	 * Should only be called by MidiPlayer.returnToZero(), MidiPlayer will behave 
-	 * incorrectly if anything else calls it.
-	 *
-	 */
-	public abstract void returnToZero();
-	
-	/**
-	 * 
 	 * @return the resolution in ticks per quarter note
 	 */
 	public abstract int getResolution();
+	
+	/**
+	 * Should only be called by MidiPlayer.returnToZero(), MidiPlayer will behave 
+	 * incorrectly if anything else calls it.
+	 * Package visibility to prevent other packages calling it.
+	 */
+	abstract void returnToZero();
 	
 	/**
 	 * An iterator of MidiEvents.
 	 * We don't implement hasNext() because in general there is no iterator
 	 * termination, another MidiEvent may be created at ant time. Also, if there
 	 * is a next MidiEvent we want to know what it is in order to examine its tick.
+	 * MidiEvent tick values should monotonically increase even if repositioning or looping.
 	 * @author st
-	 *
 	 */
 	public interface EventSource
 	{
