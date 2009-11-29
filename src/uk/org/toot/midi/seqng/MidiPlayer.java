@@ -28,6 +28,7 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("Can't set MidiSource while playing");
 		}
 		super.setMidiSource(source);
+		setBpm(120);
 	}
 	
 	/**
@@ -38,9 +39,7 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("MidiSource is null");
 		}
 		if ( running ) return;
-		setBpm(120);
 		running = true;
-		refMillis = getCurrentTimeMillis();
 		playEngine = new PlayEngine();
 		notifyObservers();
 	}
@@ -62,6 +61,7 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("Can't returnToZero while playing");
 		}
 		source.returnToZero();
+		setBpm(120);
 		refTick = 0L;
 	}
 	
@@ -162,9 +162,10 @@ public class MidiPlayer extends MidiRenderer
 		}
 		
 		public void run() {
+			refMillis = getCurrentTimeMillis();
 			Thread thisThread = Thread.currentThread();
 			boolean complete = false;
-			while ( thread == thisThread && !complete ) {
+			while ( (thread == thisThread) && !complete ) {
 				complete = pump() && stopOnEmpty;
 
 				try {
