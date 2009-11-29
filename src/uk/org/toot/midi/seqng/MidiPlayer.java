@@ -29,6 +29,7 @@ public class MidiPlayer extends MidiRenderer
 		}
 		super.setMidiSource(source);
 		setBpm(120);
+		refTick = 0L;
 	}
 	
 	/**
@@ -126,6 +127,7 @@ public class MidiPlayer extends MidiRenderer
 		return System.nanoTime() / 1000000L;
 	}
 
+	// only valid when running
 	protected long getCurrentTimeTicks() {
 		return (long)(refTick + ticksPerMilli * (getCurrentTimeMillis() - refMillis));
 	}
@@ -175,6 +177,7 @@ public class MidiPlayer extends MidiRenderer
 				}
 			}
 			// recalculate refTick, compensating for sleep(1)
+			// getCurrentTimeTicks() will now be correct on next play, when refMillis is reset
 			refTick = (long)(getCurrentTimeTicks() - ticksPerMilli);
 			stopped(); // turns off active notes, resets some controllers
 		}
