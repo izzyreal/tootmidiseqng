@@ -25,6 +25,7 @@ public class MidiPlayer extends MidiRenderer
 	private float ticksPerMilli;
 	private PlayEngine playEngine;
 	private boolean stopOnEmpty = true;
+	private long accumMillis;
 
 	@Override
 	public void setMidiSource(MidiSource source) {
@@ -34,6 +35,7 @@ public class MidiPlayer extends MidiRenderer
 		super.setMidiSource(source);
 		setBpm(120);
 		refTick = 0L;
+		accumMillis = 0L;
 	}
 	
 	/**
@@ -69,6 +71,7 @@ public class MidiPlayer extends MidiRenderer
 		source.returnToZero();
 		setBpm(120);
 		refTick = 0L;
+		accumMillis = 0L;
 	}
 	
 	/**
@@ -81,6 +84,24 @@ public class MidiPlayer extends MidiRenderer
 	}
 
 	/**
+	 * Get the current tick position.
+	 * @return the tick position in the MidiSource
+	 */
+	public long getTickPosition() {
+		if ( !running ) return refTick;
+		return getCurrentTimeTicks();
+	}
+	
+	/**
+	 * Get the current millisecond position
+	 * @return the millisecond position in the MidiSource
+	 */
+	public long getMillisecondPosition() {
+		if ( !running ) return accumMillis;
+		return accumMillis + getElapsedTimeMillis();
+	}
+	
+	/**
 	 * Allow the default stop on empty to be changed in the unlikely event playing
 	 * should proceed even when there is nothing to play at any point in the future.
 	 * @param soe
@@ -91,14 +112,18 @@ public class MidiPlayer extends MidiRenderer
 	
 	// to be called when pumping has stopped
 	protected void stopped() {
+		notesOff();
+		running = false;
+		setChanged();
+		notifyObservers();
+	}
+	
+	protected void notesOff() {
 		for ( MidiSource.EventSource src : eventSources() ) {
 			if ( src instanceof MidiTarget.MessageTarget ) {
 				((MidiTarget.MessageTarget)src).notesOff(true);
 			}			
-		}
-		running = false;
-		setChanged();
-		notifyObservers();
+		}		
 	}
 	
 	@Override
@@ -119,6 +144,7 @@ public class MidiPlayer extends MidiRenderer
 		if ( isMeta(msg) ) {
 			if ( getType(msg) == TEMPO ) {
 				setBpm(getTempo(msg));
+				accumMillis += getElapsedTimeMillis();
 				refTick = event.getTick();
 				refMillis = getCurrentTimeMillis();
 			}
@@ -133,9 +159,14 @@ public class MidiPlayer extends MidiRenderer
 		return System.nanoTime() / 1000000L;
 	}
 
-	// only valid when running
+	// milliseconds elapsed since refMillis last set
+	protected long getElapsedTimeMillis() {
+		return getCurrentTimeMillis() - refMillis;
+	}
+	
+	// only valid when running because getElapsedTimeMillis() never stops
 	protected long getCurrentTimeTicks() {
-		return (long)(refTick + ticksPerMilli * (getCurrentTimeMillis() - refMillis));
+		return (long)(refTick + ticksPerMilli * getElapsedTimeMillis());
 	}
 	
 	/**
@@ -163,6 +194,7 @@ public class MidiPlayer extends MidiRenderer
 			thread = new Thread(this);
 			thread.setName("Toot MidiPlayer - "+source.getName());
 			thread.setPriority(priority);
+			refMillis = getCurrentTimeMillis(); // prevent badval on 1st getTickPosition()
 			thread.start();
 		}
 		
@@ -183,9 +215,10 @@ public class MidiPlayer extends MidiRenderer
 					// ignore
 				}
 			}
-			// recalculate refTick, compensating for sleep(1)
+			// recalculate refTick while getCurrentTimeTicks() is valid
 			// getCurrentTimeTicks() will now be correct on next play, when refMillis is reset
-			refTick = (long)(getCurrentTimeTicks() - ticksPerMilli);
+			refTick = getCurrentTimeTicks();
+			accumMillis += getElapsedTimeMillis();
 			stopped(); // turns off active notes, resets some controllers
 		}
 	}
