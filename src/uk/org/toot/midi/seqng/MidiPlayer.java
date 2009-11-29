@@ -143,6 +143,7 @@ public class MidiPlayer extends MidiRenderer
 	 * @return true if peek() on all MidiSource.Events sources returne null, false otherwise.
 	 */ 
 	protected boolean pump() {
+		source.sync();
 		return pump(getCurrentTimeTicks());
 	}
 	

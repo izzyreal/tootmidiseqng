@@ -78,6 +78,18 @@ public abstract class MidiSource extends Observable
 	abstract void returnToZero();
 	
 	/**
+	 * Should only be called by MidiPlayer.pump().
+	 * This method is called synchronously by the MidiPlayer, each time before it obtains
+	 * the List of EventSources. It is the only time the implementor is allowed to
+	 * mutate the List of EventSources. Other users of MididSource may not call sync() if
+	 * they are not prepared to accept mutations to the List of EventSources.
+	 * Failure to mutate the underlying List only in this method will likely result
+	 * in ConcurrentModificationExceptions being thrown.
+	 * Package visibility to prevent other packages calling it.
+	 */
+	void sync() {};
+	
+	/**
 	 * An iterator of MidiEvents.
 	 * We don't implement hasNext() because in general there is no iterator
 	 * termination, another MidiEvent may be created at ant time. Also, if there
