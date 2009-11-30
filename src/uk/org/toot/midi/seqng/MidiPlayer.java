@@ -8,24 +8,57 @@ import javax.sound.midi.MidiMessage;
 import static uk.org.toot.midi.message.MetaMsg.*;
 
 /**
- * MidiPlayer plays MIDI from MidiSources in real-time.
- * It is the real-time part of a 'sequencer'.
- * It cannot support controller chasing, repositioning while running, or looping.
- * It cannot easily support mute/solo because the List of EventSources may be dynamic.
- * These operations must be provided by individual MidiSource implementations
- * as appropriate.
+ * MidiPlayer plays MIDI from MidiSources in real-time. It is the real-time part
+ * of a 'sequencer'. It cannot support controller chasing, repositioning while
+ * running, or looping. It cannot easily support mute/solo because the List of
+ * EventSources may be dynamic. These operations must be provided by individual
+ * MidiSource implementations as appropriate.
+ * 
+ * Effectively we solve the law of motion: distance = velocity * time.
+ * 
+ * Distance is measured in ticks, velocity in bpm and time is, well, time.
+ * Note that this equation merely represents a constant velocity but MIDI only
+ * supports instantaneous transitions between constant tempos (velocities) so
+ * total distance is the accumulation of a contiguous series of these linear
+ * segments.
+ * 
+ * Because we only have knowledge of the current linear segment and the
+ * accumulation of all previous linear segments we are unable to calculate the
+ * position for arbitrary times that are outside the current linear segment.
+ * Fundamentally this is why we cannot reposition or loop, we can't convert an
+ * arbitrary time to a position. In principle we could cache details of all
+ * linear segments but this does not scale well (we can play for over 200
+ * million years, with position accurately calculated to within 1 millisecond,
+ * which could be a very large cache) and is arguably best performed by a
+ * MidiSource which may already have such a cache in practice.
+ * 
  * @author st
- *
+ * 
  */
 public class MidiPlayer extends MidiRenderer
 {
-	private boolean running = false;
-	private long refTick = 0L;
-	private long refMillis;
-	private float ticksPerMilli;
 	private PlayEngine playEngine;
+	private boolean running = false;
 	private boolean stopOnEmpty = true;
-	private long accumMillis;
+	private float bpm;
+	
+	private long accumTicks;		// accumulated ticks up to current segment
+	private long accumMillis;		// accumulated milliseconds up to current segment
+	private long refMillis;			// wall time at start of current segment
+	private long elapsedMillis; 	// elapsed time within current segment
+	private float ticksPerMilli;	// velocity of current segment
+	
+	/**
+	 * A lock object, required to make the accumulation of elapsedMillis into
+	 * accumMillis and the associated zeroing of elapsedMillis atomic so that
+	 * getMillisecondPosition() does not return transient erroneous values under
+	 * stop and tempo change conditions. The only times this lock is used on the
+	 * real-time thread are when a tempo change occurs and when the thread is
+	 * stopping. Lock contention will only occur if getMillisecondPosition()
+	 * holds the lock at that exact time and this is very unlikely given that it
+	 * merely adds two longs.
+	 */
+	private Object milliLock = new Object();
 
 	@Override
 	public void setMidiSource(MidiSource source) {
@@ -33,11 +66,9 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("Can't set MidiSource while playing");
 		}
 		super.setMidiSource(source);
-		setBpm(120);
-		refTick = 0L;
-		accumMillis = 0L;
+		init();
 	}
-	
+
 	/**
 	 * Start playing
 	 */
@@ -46,10 +77,8 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("MidiSource is null");
 		}
 		if ( running ) return;
-		running = true;
+		setRunning(true);
 		playEngine = new PlayEngine();
-		setChanged();
-		notifyObservers();
 	}
 	
 	/**
@@ -69,14 +98,12 @@ public class MidiPlayer extends MidiRenderer
 			throw new IllegalStateException("Can't returnToZero while playing");
 		}
 		source.returnToZero();
-		setBpm(120);
-		refTick = 0L;
-		accumMillis = 0L;
+		init();
 	}
 	
 	/**
 	 * Return whether we're currently playing.
-	 * Note that observers are notified on transitions.
+	 * Note that observers are notified immediately subsequent to transitions.
 	 * @return true if playing (or stopping), false if stopped
 	 */
 	public boolean isRunning() {
@@ -88,7 +115,6 @@ public class MidiPlayer extends MidiRenderer
 	 * @return the tick position in the MidiSource
 	 */
 	public long getTickPosition() {
-		if ( !running ) return refTick;
 		return getCurrentTimeTicks();
 	}
 	
@@ -97,8 +123,17 @@ public class MidiPlayer extends MidiRenderer
 	 * @return the millisecond position in the MidiSource
 	 */
 	public long getMillisecondPosition() {
-		if ( !running ) return accumMillis;
-		return accumMillis + getElapsedTimeMillis();
+		synchronized ( milliLock ) {
+			return accumMillis + elapsedMillis;
+		}
+	}
+	
+	/**
+	 * Get the current tempo in beats per minute.
+	 * @return the current tempo
+	 */
+	public float getBeatsPerMinute() {
+		return bpm;
 	}
 	
 	/**
@@ -110,12 +145,21 @@ public class MidiPlayer extends MidiRenderer
 		stopOnEmpty = soe;
 	}
 	
-	// to be called when pumping has stopped
-	protected void stopped() {
-		notesOff();
-		running = false;
+	protected void init() {
+		setBpm(120);
+		accumTicks = 0L;
+		accumMillis = 0L;		
+	}
+	
+	protected void setBpm(float bpm) {
+		ticksPerMilli = source.getResolution() * bpm / 60000;
+		this.bpm = bpm;
+	}
+
+	protected void setRunning(boolean r) {
+		running = r;
 		setChanged();
-		notifyObservers();
+		notifyObservers();		
 	}
 	
 	protected void notesOff() {
@@ -124,6 +168,12 @@ public class MidiPlayer extends MidiRenderer
 				((MidiTarget.MessageTarget)src).notesOff(true);
 			}			
 		}		
+	}
+	
+	// to be called when pumping has stopped
+	protected void stopped() {
+		notesOff();
+		setRunning(false);
 	}
 	
 	@Override
@@ -144,29 +194,24 @@ public class MidiPlayer extends MidiRenderer
 		if ( isMeta(msg) ) {
 			if ( getType(msg) == TEMPO ) {
 				setBpm(getTempo(msg));
-				accumMillis += getElapsedTimeMillis();
-				refTick = event.getTick();
+				// start a new linear segment
+				accumTicks = event.getTick(); // by definition
+				synchronized ( milliLock ) {
+					accumMillis += elapsedMillis;
+					// about to be reset but ensure consistency for getMillisecondPosition()
+					elapsedMillis = 0;
+				}
 				refMillis = getCurrentTimeMillis();
 			}
 		}
 	}
 	
-	protected void setBpm(float bpm) {
-		ticksPerMilli = source.getResolution() * bpm / 60000;
-	}
-
 	protected long getCurrentTimeMillis() {
 		return System.nanoTime() / 1000000L;
 	}
 
-	// milliseconds elapsed since refMillis last set
-	protected long getElapsedTimeMillis() {
-		return getCurrentTimeMillis() - refMillis;
-	}
-	
-	// only valid when running because getElapsedTimeMillis() never stops
 	protected long getCurrentTimeTicks() {
-		return (long)(refTick + ticksPerMilli * getElapsedTimeMillis());
+		return (long)(accumTicks + ticksPerMilli * elapsedMillis);
 	}
 	
 	/**
@@ -207,18 +252,19 @@ public class MidiPlayer extends MidiRenderer
 			Thread thisThread = Thread.currentThread();
 			boolean complete = false;
 			while ( (thread == thisThread) && !complete ) {
+				elapsedMillis = getCurrentTimeMillis() - refMillis;
 				complete = pump() && stopOnEmpty;
-
 				try {
 					Thread.sleep(1);
 				} catch (InterruptedException ie) {
 					// ignore
 				}
 			}
-			// recalculate refTick while getCurrentTimeTicks() is valid
-			// getCurrentTimeTicks() will now be correct on next play, when refMillis is reset
-			refTick = getCurrentTimeTicks();
-			accumMillis += getElapsedTimeMillis();
+			accumTicks = getCurrentTimeTicks()+1; // restart from next tick
+			synchronized ( milliLock ) {
+				accumMillis += elapsedMillis;
+				elapsedMillis = 0;
+			}
 			stopped(); // turns off active notes, resets some controllers
 		}
 	}
