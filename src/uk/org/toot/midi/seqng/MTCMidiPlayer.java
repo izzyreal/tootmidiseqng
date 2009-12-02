@@ -14,6 +14,7 @@ import uk.org.toot.midi.message.MTC;
  * 25 fps and up to 0.5 millisecond jitter for 24 and 30 fps, plus any thread
  * timing jitter.
  * We also send a Full MTC message on returnToZero().
+ * Default frame rate is 25fps.
  * @author st
  *
  */
@@ -27,8 +28,12 @@ public class MTCMidiPlayer extends MidiPlayer
 	private int failures = 0;
 
 	private MTC.Time time = new MTC.Time();
-	private MTC.FrameRate rate = MTC.FrameRate.FPS_25;
-	private MTC.FrameRate requestedRate = rate;
+	private MTC.FrameRate rate;
+	private MTC.FrameRate requestedRate;
+	
+	public MTCMidiPlayer() {
+		setMTCFrameRate(MTC.FrameRate.FPS_25);
+	}
 	
 	/**
 	 * Set whether MTC is enabled.
@@ -59,12 +64,13 @@ public class MTCMidiPlayer extends MidiPlayer
 	 */
 	public void setMTCFrameRate(MTC.FrameRate rate) {
 		if ( rate == this.rate ) return; // no change
-		if ( isRunning() ) {
-			// schedule a synchronized update of related variables
-			requestedRate = rate;
-		} else {
+		if ( rate == MTC.FrameRate.FPS_30DF ) {
+			throw new IllegalArgumentException("Drop Frame not supported");
+		}
+		if ( !isRunning() ) {
 			setMTCFrameRateImpl(rate);
 		}
+		requestedRate = rate;
 	}
 	
 	// called synchronously with real-time thread if running
@@ -73,7 +79,6 @@ public class MTCMidiPlayer extends MidiPlayer
 		mspf = 1000f / rate.getRate();	
 		mspqf = mspf / 4;	
 		qfpms = 1 / mspqf;
-		requestedRate = rate;
 	}
 	
 	@Override
