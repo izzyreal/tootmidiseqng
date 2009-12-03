@@ -207,10 +207,11 @@ public class MidiPlayer extends MidiRenderer
 	}
 	
 	// only to be called synchronously with real-time thread
+	// we increment the values so the next pump has a millisecond interval to play
 	protected void reposition(long millis, long tick) {
-		accumTicks = tick;
+		accumTicks = (long)(tick + ticksPerMilli);
 		synchronized ( milliLock ) {
-			accumMillis = millis;
+			accumMillis = millis + 1;
 			elapsedMillis = 0;
 		}
 		refMillis = getCurrentTimeMillis();
@@ -229,12 +230,12 @@ public class MidiPlayer extends MidiRenderer
 	 * @return true if peek() on all MidiSource.Events sources returne null, false otherwise.
 	 */ 
 	protected boolean pump() {
-		long tick = getCurrentTimeTicks();
-		MidiSource.RepositionCommand cmd = source.sync(tick);
+		MidiSource.RepositionCommand cmd = source.sync(getCurrentTimeTicks());
 		if ( cmd != null ) {
 			reposition(cmd.getMillis(), cmd.getTick());
 		}
-		return pump(tick);
+		// repositioning means the current tick may have changed
+		return pump(getCurrentTimeTicks());
 	}
 	
 	/**
