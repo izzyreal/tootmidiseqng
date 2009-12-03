@@ -53,6 +53,8 @@ import javax.sound.midi.MidiEvent;
  */
 public abstract class MidiSource extends Observable
 {
+	private boolean syncing = false;
+	
 	/**
 	 * Note that the first EventSource in the List should contain those events
 	 * which are restricted to the first track of a type 1 standard midi file. e.g. Tempo
@@ -71,21 +73,35 @@ public abstract class MidiSource extends Observable
 	public abstract int getResolution();
 	
 	/**
-	 * Should only be called by MidiPlayer.returnToZero(), MidiPlayer will behave 
+	 * Should only be called by the client, the client will behave 
 	 * incorrectly if anything else calls it.
 	 */
-	protected abstract void returnToZero();
+	public abstract void returnToZero();
 	
 	/**
-	 * Should only be called by MidiPlayer.pump().
-	 * This method is called synchronously by the MidiPlayer, each time before it obtains
+	 * Should only be called by the client.
+	 * This method is called synchronously by the client, each time before it obtains
 	 * the List of EventSources. It is the only time the implementor is allowed to
-	 * mutate the List of EventSources. Other users of MididSource may not call sync() if
-	 * they are not prepared to accept mutations to the List of EventSources.
+	 * mutate the List of EventSources. Some clients of MidiSource may not call sync() 
+	 * because they are not prepared to accept mutations to the List of EventSources.
 	 * Failure to mutate the underlying List only in this method will likely result
 	 * in ConcurrentModificationExceptions being thrown.
+	 * @param currentTick the tick the client is currently at, useful for recording
+	 * @return a RepositionCommand or null
 	 */
-	protected void sync() {};
+	public RepositionCommand sync(long currentTick) {
+		syncing = true;
+		return null; 
+	}
+	
+	/**
+	 * An implementation may only mutate the List and reposition the client
+	 * if this method returns true. This method is provided so that an
+	 * implementation explicitly knows whether these operations are supported,
+	 * but these operations will simply not function if they are not supported.
+	 * @return whether List mutation and client repositioning is available
+	 */
+	protected boolean isSyncing() { return syncing; }
 	
 	/**
 	 * An iterator of MidiEvents.
@@ -108,5 +124,27 @@ public abstract class MidiSource extends Observable
 		 * @return the next MidiEvent or null
 		 */
 		public MidiEvent next();
+	}
+	
+	/**
+	 * A way of repositioning the client in real-time requiring both time
+	 * in milliseconds and tick be provided.
+	 * An instance of this class may be synchronously returned to the client
+	 * via sync().
+	 * @author st
+	 */
+	public class RepositionCommand
+	{
+		private long millis;
+		private long tick;
+		
+		public RepositionCommand(long millis, long tick) {
+			this.millis = millis;
+			this.tick = tick;
+		}
+		
+		public long getMillis() { return millis; }
+		
+		public long getTick() { return tick; }
 	}
 }

@@ -206,6 +206,16 @@ public class MidiPlayer extends MidiRenderer
 		}
 	}
 	
+	// only to be called synchronously with real-time thread
+	protected void reposition(long millis, long tick) {
+		accumTicks = tick;
+		synchronized ( milliLock ) {
+			accumMillis = millis;
+			elapsedMillis = 0;
+		}
+		refMillis = getCurrentTimeMillis();
+	}
+	
 	protected long getCurrentTimeMillis() {
 		return System.nanoTime() / 1000000L;
 	}
@@ -219,8 +229,12 @@ public class MidiPlayer extends MidiRenderer
 	 * @return true if peek() on all MidiSource.Events sources returne null, false otherwise.
 	 */ 
 	protected boolean pump() {
-		source.sync();
-		return pump(getCurrentTimeTicks());
+		long tick = getCurrentTimeTicks();
+		MidiSource.RepositionCommand cmd = source.sync(tick);
+		if ( cmd != null ) {
+			reposition(cmd.getMillis(), cmd.getTick());
+		}
+		return pump(tick);
 	}
 	
 	/**
