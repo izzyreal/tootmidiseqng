@@ -20,6 +20,7 @@ public abstract class MidiRenderer extends Observable
 			throw new IllegalArgumentException("MidiSource can't be null");
 		}
 		this.source = source;
+		source.returnToZero(); // just in case it isn't
 	}
 	
 	/**

@@ -48,6 +48,9 @@ import javax.sound.midi.MidiEvent;
  * The next note may be varying as new notes are added, so it is arguably best practice to
  * maintain position by referencing the previous note.
  * 
+ * Note that this class is a compostion of iterators, it can only be used by one client
+ * at a time.
+ * 
  * @author st
  * 
  */

@@ -67,6 +67,7 @@ public class MidiPlayer extends MidiRenderer
 		}
 		super.setMidiSource(source);
 		init();
+		source.sync(0); // quickly inform source we support syncing
 	}
 
 	/**
