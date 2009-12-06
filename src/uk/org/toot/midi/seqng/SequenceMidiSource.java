@@ -1,9 +1,15 @@
 package uk.org.toot.midi.seqng;
 
+import static uk.org.toot.midi.message.MetaMsg.getString;
+import static uk.org.toot.midi.message.MetaMsg.getType;
+import static uk.org.toot.midi.message.MetaMsg.isMeta;
+import static uk.org.toot.midi.message.MetaMsg.TRACK_NAME;
+
 import java.util.Collections;
 import java.util.List;
 
 import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
@@ -27,6 +33,8 @@ public class SequenceMidiSource extends MidiSource
 			eventSources.add(new SequenceEventSource(tracks[i]));
 		}
 	}
+	
+	public Sequence getSequence() { return sequence; }
 	
 	@Override
 	public List<EventSource> getEventSources() {
@@ -56,10 +64,13 @@ public class SequenceMidiSource extends MidiSource
 	protected class SequenceEventSource implements EventSource
 	{
 		private Track track;
+		private String name;
 		private int index = 0;
 		
 		public SequenceEventSource(Track track) {
 			this.track = track;
+			String aname = getMetaName(TRACK_NAME);
+			name = aname == null ? "Player: <none>" : "Player: "+aname;
 		}
 		
 		public MidiEvent peek() {
@@ -75,5 +86,32 @@ public class SequenceMidiSource extends MidiSource
 		public void returnToZero() {
 			index = 0;
 		}
+		
+		public String getName() {
+			return name;
+		}
+		
+	    protected String getMetaName(int type) {
+	        MidiEvent event = getFirstMetaEvent(type);
+	        if ( event == null ) return null;
+	        MidiMessage msg = event.getMessage();
+	        if ( isMeta(msg) ) {
+	            return getString(msg);
+	        }
+	        return null;
+	    }
+
+	    protected MidiEvent getFirstMetaEvent(int type) {
+	        for ( int i = 0; i < track.size() - 1; i++ ) {
+	            MidiEvent event = track.get(i);
+	            MidiMessage msg = event.getMessage();
+	            if ( isMeta(msg) ) {
+	                if (getType(msg) == type) {
+	                    return event;
+	                }
+	            }
+	        }
+	        return null;
+	    }
 	}
 }
