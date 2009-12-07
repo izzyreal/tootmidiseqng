@@ -129,7 +129,8 @@ public abstract class MidiSource extends Observable
 		public MidiEvent next();
 		
 		/**
-		 * Return the name of this event source iterator
+		 * Return the name of the EventSource, which should be unique
+		 * for each EventSource belonging to this MidiSource.
 		 * @return our name
 		 */
 		public String getName();

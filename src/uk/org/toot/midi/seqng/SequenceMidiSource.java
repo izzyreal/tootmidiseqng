@@ -30,7 +30,7 @@ public class SequenceMidiSource extends MidiSource
 		this.sequence = sequence;
 		Track[] tracks = sequence.getTracks();
 		for ( int i = 0; i < tracks.length; i++ ) {
-			eventSources.add(new SequenceEventSource(tracks[i]));
+			eventSources.add(new SequenceEventSource(i, tracks[i]));
 		}
 	}
 	
@@ -67,10 +67,10 @@ public class SequenceMidiSource extends MidiSource
 		private String name;
 		private int index = 0;
 		
-		public SequenceEventSource(Track track) {
+		public SequenceEventSource(int trk, Track track) {
 			this.track = track;
 			String aname = getMetaName(TRACK_NAME);
-			name = aname == null ? "Player: <none>" : "Player: "+aname;
+			name = aname == null ? "Player: Track "+(1+trk) : "Player: "+aname;
 		}
 		
 		public MidiEvent peek() {
