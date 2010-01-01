@@ -32,11 +32,13 @@ public abstract class MidiRenderer extends Observable
 		MidiEvent evt;
 		int srcIdx = 0;
 		boolean empty = true;
+		long offsetTick;
 		for ( MidiSource.EventSource src : eventSources() ) {
 			evt = src.peek();
 			if ( evt == null ) continue;
 			empty = false;
-			while ( evt.getTick() <= targetTick ) {
+			offsetTick = targetTick - getTickOffset(src, srcIdx);
+			while ( evt.getTick() <= offsetTick ) {
 				transport(evt.getMessage(), src, srcIdx);
 				if ( srcIdx == 0 ) check(evt);
 				src.next();
@@ -60,7 +62,7 @@ public abstract class MidiRenderer extends Observable
 	 * Transport a MidiMessage from an EventSource at index i in the List
 	 * @param msg the MidiMessage to transport
 	 * @param src the EventSource which is the source of the MidiMessage
-	 * @param i the index of the EventSource within its List
+	 * @param i the index of the EventSource within the List
 	 */
 	protected abstract void transport(MidiMessage msg, MidiSource.EventSource src, int i);
 	
@@ -72,5 +74,18 @@ public abstract class MidiRenderer extends Observable
 	 */
 	protected void check(MidiEvent event) {
 		// default null implementation
+	}
+	
+	/**
+	 * Return the offset, in ticks, that the EventSource should be delayed/advanced by.
+	 * Typically a 'sequencer' may need to delay messages sent to a hardware MIDI port
+	 * in order that they are synchronized with messages sent to a softsynth, with
+	 * its consequential audio latency.
+	 * @param src the EventSource
+	 * @param i the index of the EventSource within the List
+	 * @return the offset in ticks, postive for delay, negative for advance.
+	 */
+	protected long getTickOffset(MidiSource.EventSource src, int i) {
+		return 0L;
 	}
 }
