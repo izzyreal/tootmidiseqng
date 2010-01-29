@@ -100,6 +100,9 @@ public class MidiPlayer extends MidiRenderer
 	 * As if setMidiSource() had been called again.
 	 */
 	public void returnToZero() {
+		if ( source == null ) {
+			throw new IllegalStateException("MidiSource is null");
+		}
 		// to avoid synchronisation issues
 		if ( running ) {
 			throw new IllegalStateException("Can't returnToZero while playing");
@@ -185,6 +188,9 @@ public class MidiPlayer extends MidiRenderer
 	
 	@Override
 	protected List<MidiSource.EventSource> eventSources() {
+		if ( source == null ) {
+			throw new IllegalStateException("MidiSource is null");
+		}
 		return source.getEventSources();
 	}
 	
